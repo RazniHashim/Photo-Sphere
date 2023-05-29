@@ -214,7 +214,7 @@
       const dx = touches[0].clientX - touches[1].clientX;
       const dy = touches[0].clientY - touches[1].clientY;
       const distance = Math.sqrt(dx * dx + dy * dy);
-      const zoomSpeed = 0.1; // Adjust the zoom speed as needed
+      const zoomSpeed = 0.5; // Adjust the zoom speed as needed
 
       // Zoom in
       if (distance < initialDistance) {
