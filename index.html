@@ -178,8 +178,12 @@
     handleImageFile(file);
   });
 
-  // Add event listener for mousewheel (zoom) events
+  // Add event listeners for mousewheel (zoom) and touch events (pinch) to handle zooming
   document.addEventListener('mousewheel', handleMouseWheel);
+  document.addEventListener('touchstart', handleTouchStart);
+  document.addEventListener('touchmove', handleTouchMove);
+
+  let initialDistance = 0;
 
   function handleMouseWheel(event) {
     const delta = event.wheelDelta;
@@ -192,6 +196,35 @@
     // Zoom out
     else {
       camera.position.z -= zoomSpeed;
+    }
+  }
+
+  function handleTouchStart(event) {
+    const touches = event.touches;
+    if (touches.length === 2) {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      initialDistance = Math.sqrt(dx * dx + dy * dy);
+    }
+  }
+
+  function handleTouchMove(event) {
+    const touches = event.touches;
+    if (touches.length === 2) {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const zoomSpeed = 0.01; // Adjust the zoom speed as needed
+
+      // Zoom in
+      if (distance < initialDistance) {
+        camera.position.z += zoomSpeed;
+      }
+      // Zoom out
+      else {
+        camera.position.z -= zoomSpeed;
+      }
+      initialDistance = distance;
     }
   }
 </script>
