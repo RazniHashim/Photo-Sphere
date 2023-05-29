@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>World Globe Visualization with Three.js</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: linear-gradient(#aaaaaa, #ffffff);
+    }
+
+    #drag-drop-container {
+      position: absolute;
+      top: 10%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none; /* Disable pointer events to allow interaction with the sphere */
+    }
+    
+    #drag-drop-box {
+      width: 300px;
+      height: 50px;
+      background-color: rgba(255, 255, 255, 0.5);
+      border: 2px dashed #000000;
+      text-align: center;
+      line-height: 50px;
+      font-weight: bold;
+      pointer-events: auto; /* Enable pointer events for the box */
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<div id="drag-drop-container">
+  <input type="file" id="file-input" style="display: none" accept="image/*">
+  <div id="drag-drop-box">Select or Drag and Drop an Image</div>
+</div>
+<script src="https://threejs.org/build/three.min.js"></script>
+<script>
+  // Create a scene
+  const scene = new THREE.Scene();
+
+  // Create a camera
+  const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.z = 15;
+
+  // Create a renderer
+  const renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x000000, 0); // Set clear color to transparent
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  document.body.appendChild(renderer.domElement);
+
+  // Update renderer size when the window is resized
+  window.addEventListener('resize', onWindowResize);
+
+  function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  // Load the world map texture
+  const textureLoader = new THREE.TextureLoader();
+  const mapTexture = textureLoader.load('https://live.staticflickr.com/65535/49659694937_5b71a5d88a_b.jpg');
+  const sphereGeometry = new THREE.SphereGeometry(3.5, 16, 16);
+
+  // Create a material with the world map texture
+  const material = new THREE.MeshPhongMaterial({ map: mapTexture });
+  material.shininess = 0.5; // Adjust the shininess property for a shiny effect
+  material.receiveShadow = true; // Enable shadow reception on the material
+
+  // Create a mesh with the sphere geometry and the material
+  const sphere = new THREE.Mesh(sphereGeometry, material);
+  sphere.castShadow = true;
+  sphere.receiveShadow = true; // Enable shadow reception on the sphere
+  scene.add(sphere);
+
+  // Add ambient light to the scene
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+  scene.add(ambientLight);
+
+  // Add directional light for casting shadows
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  directionalLight.position.set(0, 40, 20);
+  directionalLight.castShadow = true;
+  scene.add(directionalLight);
+
+  // Configure shadow properties for the directional light
+  directionalLight.shadow.mapSize.width = 1024;
+  directionalLight.shadow.mapSize.height = 1024;
+  directionalLight.shadow.camera.near = 0.5;
+  directionalLight.shadow.camera.far = 150;
+
+  // Animate the scene
+  function animate() {
+    requestAnimationFrame(animate);
+    sphere.rotation.y += 0.005;
+    renderer.render(scene, camera);
+  }
+
+  animate();
+
+  // Add event listeners for drag and drop
+  const dragDropContainer = document.getElementById('drag-drop-container');
+  dragDropContainer.addEventListener('dragenter', handleDragEnter);
+  dragDropContainer.addEventListener('dragover', handleDragOver);
+  dragDropContainer.addEventListener('dragleave', handleDragLeave);
+  dragDropContainer.addEventListener('drop', handleDrop);
+
+  // Add event listener for clicking on the box
+  const dragDropBox = document.getElementById('drag-drop-box');
+  dragDropBox.addEventListener('click', openFileSelection);
+
+  function handleDragEnter(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    dragDropContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.7)';
+  }
+
+  function handleDragOver(event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  function handleDragLeave(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    dragDropContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+  }
+
+  function handleDrop(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    dragDropContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+      handleImageFile(files[0]);
+    }
+  }
+
+  function openFileSelection() {
+    const fileInput = document.getElementById('file-input');
+    fileInput.click();
+  }
+
+  // Handle selected image file
+  function handleImageFile(file) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const image = new Image();
+      image.onload = function () {
+        // Create a canvas to draw the image
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = image.width;
+        canvas.height = image.height;
+        ctx.drawImage(image, 0, 0);
+
+        // Convert the canvas to a texture
+        const texture = new THREE.CanvasTexture(canvas);
+        material.map = texture;
+        material.needsUpdate = true;
+      };
+      image.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Handle selected image file from file input
+  const fileInput = document.getElementById('file-input');
+  fileInput.addEventListener('change', function (event) {
+    const file = event.target.files[0];
+    handleImageFile(file);
+  });
+
+  // Add event listener for mousewheel (zoom) events
+  document.addEventListener('mousewheel', handleMouseWheel);
+
+  function handleMouseWheel(event) {
+    const delta = event.wheelDelta;
+    const zoomSpeed = 0.3; // Adjust the zoom speed as needed
+
+    // Zoom in
+    if (delta < 0) {
+      camera.position.z += zoomSpeed;
+    }
+    // Zoom out
+    else {
+      camera.position.z -= zoomSpeed;
+    }
+  }
+</script>
+</body>
+</html>
