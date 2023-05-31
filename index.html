@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>World Globe Visualization with Three.js</title>
+  <title>Photo-Sphere</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
@@ -98,7 +98,7 @@
   // Animate the scene
   function animate() {
     requestAnimationFrame(animate);
-    sphere.rotation.y += 0.005;
+    sphere.rotation.y += 0.01;
     renderer.render(scene, camera);
   }
 
